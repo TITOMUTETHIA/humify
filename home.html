@@ -3,26 +3,128 @@
     <head>
         <title>Home - HumanLine</title>
         <link rel="stylesheet" href="styles.css">
+        <style>
+            /* General Styles */
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f9f9f9;
+                color: #333;
+            }
+
+            /* Navigation Menu */
+            nav {
+                background-color: #007bff;
+                padding: 15px;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            nav a {
+                color: white;
+                margin: 0 15px;
+                text-decoration: none;
+                font-weight: bold;
+                font-size: 16px;
+            }
+
+            nav a:hover {
+                text-decoration: underline;
+            }
+
+            /* Container */
+            .container {
+                max-width: 800px;
+                margin: 50px auto;
+                padding: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                text-align: center;
+            }
+
+            /* Headings */
+            h1 {
+                color: #007bff;
+                font-size: 2.5em;
+                margin-bottom: 20px;
+            }
+
+            p {
+                font-size: 1.2em;
+                line-height: 1.6;
+                margin-bottom: 20px;
+            }
+
+            /* Buttons */
+            button {
+                padding: 10px 20px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
+            /* Logout Button */
+            #logoutButton {
+                margin-top: 20px;
+            }
+
+            /* Footer */
+            footer {
+                text-align: center;
+                padding: 10px;
+                background-color: #007bff;
+                color: white;
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                font-size: 14px;
+            }
+        </style>
     </head>
     <body>
-        <!-- Include the navigation menu -->
-        <div id="menu"></div>
-        <script type="module">
-            fetch('menu.html')
-                .then(response => response.text())
-                .then(html => document.getElementById('menu').innerHTML = html);
+        <!-- Navigation Menu -->
+        <nav>
+            <a href="home.html">Home</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+            <button id="logoutButton" style="background: none; border: none; color: white; font-size: 16px; cursor: pointer; margin-left: 15px;">Logout</button>
+        </nav>
 
+        <!-- Main Content -->
+        <div class="container">
+            <h1>Welcome to HumanLine</h1>
+            <p>This is the home page of HumanLine, your go-to platform for real-time chat and premium services.</p>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            &copy; 2025 HumanLine. All rights reserved.
+        </footer>
+
+        <script type="module">
             // Restrict access to logged-in users only
             const user = JSON.parse(localStorage.getItem('loggedInUser'));
             if (!user) {
                 alert("Please log in to access this page.");
                 window.location.href = "index.html";
             }
-        </script>
 
-        <div class="container">
-            <h1>Welcome to HumanLine</h1>
-            <p>This is the home page of HumanLine, your go-to platform for real-time chat and premium services.</p>
-        </div>
+            // Logout functionality
+            document.getElementById('logoutButton').addEventListener('click', () => {
+                localStorage.removeItem('loggedInUser'); // Clear user session
+                alert("You have been logged out.");
+                window.location.href = "index.html"; // Redirect to login page
+            });
+        </script>
     </body>
 </html>
