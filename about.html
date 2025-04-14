@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html> href="home.html">Home</a>
+    <head>f="about.html">About</a>
+        <title>About - HumanLine</title>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <!-- Include the navigation menu -->
+        <div id="menu"></div>
+        <script>
+            fetch('menu.html')
+                .then(response => response.text())
+                .then(html => document.getElementById('menu').innerHTML = html);
+        </script>
+
+        <div class="container">
+            <h1>About HumanLine</h1>
+            <p>HumanLine is a platform designed to provide real-time chat services with options for AI-powered responses and premium human support.</p>
+        </div>
+    </body>
+</html>

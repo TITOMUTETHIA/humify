@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Admin Dashboard - HumanLine</title>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <!-- Include the navigation menu -->
+        <div id="menu"></div>
+        <script type="module">
+            fetch('menu.html')
+                .then(response => response.text())
+                .then(html => document.getElementById('menu').innerHTML = html);
+
+            // Restrict access to admin users only
+            const user = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (!user || user.role !== "admin") {
+                alert("Access denied! Admins only.");
+                window.location.href = "home.html";
+            }
+        </script>
+
+        <div class="container">
+            <h1>Admin Dashboard</h1>
+            <p>Welcome, Admin! Here you can monitor and manage user information.</p>
+        </div>
+    </body>
+</html>
