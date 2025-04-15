@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html> href="home.html">Home</a>
-    <head>f="about.html">About</a>
+<html>
+    <head>
         <title>About - HumanLine</title>
         <link rel="stylesheet" href="styles.css">
     </head>
@@ -11,11 +11,24 @@
             fetch('menu.html')
                 .then(response => response.text())
                 .then(html => document.getElementById('menu').innerHTML = html);
+
+            // Restrict access to logged-in users only
+            const user = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (!user) {
+                alert("Please log in to access this page.");
+                window.location.href = "index.html";
+            }
         </script>
 
+        <!-- Main Content -->
         <div class="container">
             <h1>About HumanLine</h1>
             <p>HumanLine is a platform designed to provide real-time chat services with options for AI-powered responses and premium human support.</p>
         </div>
+
+        <!-- Footer -->
+        <footer>
+            &copy; 2025 HumanLine. All rights reserved.
+        </footer>
     </body>
 </html>

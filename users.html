@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Admin Dashboard - HumanLine</title>
+        <title>Manage Users - HumanLine</title>
         <link rel="stylesheet" href="styles.css">
         <style>
             .admin-container {
@@ -16,10 +16,6 @@
             .admin-container h1 {
                 color: #007bff;
                 font-size: 2.5em;
-                margin-bottom: 20px;
-            }
-
-            .user-list {
                 margin-bottom: 20px;
             }
 
@@ -57,18 +53,9 @@
         <!-- Include the navigation menu -->
         <div id="menu"></div>
         <script>
-            // Include the navigation menu
             fetch('menu.html')
                 .then(response => response.text())
-                .then(html => document.getElementById('menu').innerHTML = html)
-                .then(() => {
-                    // Add logout functionality
-                    document.getElementById('logoutButton').addEventListener('click', () => {
-                        localStorage.removeItem('loggedInUser'); // Clear user session
-                        alert("You have been logged out.");
-                        window.location.href = "index.html"; // Redirect to login page
-                    });
-                });
+                .then(html => document.getElementById('menu').innerHTML = html);
 
             // Restrict access to admin users only
             const user = JSON.parse(localStorage.getItem('loggedInUser'));
@@ -80,9 +67,8 @@
 
         <!-- Main Content -->
         <div class="admin-container">
-            <h1>Admin Dashboard</h1>
+            <h1>Manage Users</h1>
             <div class="user-list">
-                <h2>Manage Users</h2>
                 <table>
                     <thead>
                         <tr>
@@ -111,17 +97,16 @@
         </div>
 
         <script>
-            // Load users from the backend
-            const loadUsers = async () => {
-                const response = await fetch('/users');
-                const users = await response.json();
+            // Load users from localStorage
+            const loadUsers = () => {
+                const users = JSON.parse(localStorage.getItem('users')) || [];
                 const userTable = document.getElementById('userTable');
                 userTable.innerHTML = '';
                 users.forEach((user, index) => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${user.username}</td>
-                        <td>${user.role || 'user'}</td>
+                        <td>${user.role}</td>
                         <td class="user-actions">
                             <button onclick="editUser(${index})">Edit</button>
                             <button onclick="deleteUser(${index})" style="background-color: red;">Delete</button>
@@ -131,30 +116,48 @@
                 });
             };
 
+            // Save users to localStorage
+            const saveUsers = (users) => {
+                localStorage.setItem('users', JSON.stringify(users));
+            };
+
             // Add a new user
-            document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+            document.getElementById('addUserForm').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const username = document.getElementById('newUsername').value;
                 const password = document.getElementById('newPassword').value;
                 const role = document.getElementById('newRole').value;
 
-                const newUser = { username, password, role };
-
-                const response = await fetch('/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newUser),
-                });
-
-                if (response.ok) {
-                    alert('User added successfully!');
-                    loadUsers();
-                    e.target.reset();
-                } else {
-                    const error = await response.json();
-                    alert(error.error);
-                }
+                const users = JSON.parse(localStorage.getItem('users')) || [];
+                users.push({ username, password, role });
+                saveUsers(users);
+                loadUsers();
+                alert('User added successfully!');
+                e.target.reset();
             });
+
+            // Edit a user
+            const editUser = (index) => {
+                const users = JSON.parse(localStorage.getItem('users')) || [];
+                const username = prompt('Enter new username:', users[index].username);
+                if (username) {
+                    users[index].username = username;
+                    saveUsers(users);
+                    loadUsers();
+                    alert('User updated successfully!');
+                }
+            };
+
+            // Delete a user
+            const deleteUser = (index) => {
+                const users = JSON.parse(localStorage.getItem('users')) || [];
+                if (confirm('Are you sure you want to delete this user?')) {
+                    users.splice(index, 1);
+                    saveUsers(users);
+                    loadUsers();
+                    alert('User deleted successfully!');
+                }
+            };
 
             // Load users on page load
             loadUsers();

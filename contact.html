@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Contact</title>
+        <link rel="stylesheet" href="styles.css">
+        <style>
+            .map-container {
+                margin-top: 20px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            iframe {
+                width: 100%;
+                height: 400px;
+                border: none;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Include the navigation menu -->
+        <div id="menu"></div>
+        <script>
+            fetch('menu.html')
+                .then(response => response.text())
+                .then(html => document.getElementById('menu').innerHTML = html);
+
+            // Restrict access to logged-in users only
+            const user = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (!user) {
+                alert("Please log in to access this page.");
+                window.location.href = "index.html";
+            }
+        </script>
+
+        <!-- Main Content -->
+        <div class="container">
+            <h1>Welcome to HumanLine Contact Page</h1>
+            <p>Feel free to reach out to us for any inquiries or support. We are here to help you!</p>
+            <p><strong>Help Line:</strong> 0740953711</p>
+            <p><strong>Email:</strong> <a href="mailto:humanline@gmail.com">humanline@gmail.com</a></p>
+
+            <h2>Our Location</h2>
+            <div class="map-container">
+                <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1994.746768768798!2d36.8219466!3d-1.2920659!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f10d4f2f4e3d7%3A0x7c7b2b7f7c8c8e8e!2sNairobi!5e0!3m2!1sen!2ske!4v1616161616161!5m2!1sen!2ske"
+                    allowfullscreen=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            &copy; 2025 HumanLine. All rights reserved.
+        </footer>
+    </body>
+</html>

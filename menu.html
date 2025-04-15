@@ -1,5 +1,173 @@
-<nav style="background-color: #007bff; padding: 10px; color: white;">
-    <a href="home.html" style="color: white; margin-right: 15px; text-decoration: none;">Home</a>
-    <a href="about.html" style="color: white; margin-right: 15px; text-decoration: none;">About</a>
-    <a href="contact.html" style="color: white; text-decoration: none;">Contact</a>
-</nav>
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>About - HumanLine</title>
+        <link rel="stylesheet" href="styles.css">
+        <style>
+            /* General Styles */
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f9f9f9;
+                color: #333;
+            }
+
+            /* Navigation Menu */
+            nav {
+                background-color: #007bff;
+                padding: 15px;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            nav a {
+                color: white;
+                margin: 0 15px;
+                text-decoration: none;
+                font-weight: bold;
+                font-size: 16px;
+            }
+
+            nav a:hover {
+                text-decoration: underline;
+            }
+
+            #logoutButton {
+                background: white;
+                border: none;
+                color: #007bff;
+                font-size: 16px;
+                cursor: pointer;
+                padding: 10px 20px;
+                border-radius: 4px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                margin-left: auto;
+            }
+
+            #logoutButton:hover {
+                background: #f1f1f1;
+            }
+
+            #themeToggleButton {
+                background: none;
+                border: none;
+                cursor: pointer;
+            }
+
+            #themeToggleButton img {
+                width: 24px;
+                height: 24px;
+            }
+
+            /* Container */
+            .container {
+                max-width: 800px;
+                margin: 50px auto;
+                padding: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                text-align: center;
+            }
+
+            /* Headings */
+            h1 {
+                color: #007bff;
+                font-size: 2.5em;
+                margin-bottom: 20px;
+            }
+
+            p {
+                font-size: 1.2em;
+                line-height: 1.6;
+                margin-bottom: 20px;
+            }
+
+            /* Footer */
+            footer {
+                text-align: center;
+                padding: 10px;
+                background-color: #007bff;
+                color: white;
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                font-size: 14px;
+            }
+
+            /* Dark Theme */
+            body.dark {
+                background-color: #333;
+                color: #f9f9f9;
+            }
+
+            body.dark nav {
+                background-color: #444;
+            }
+
+            body.dark footer {
+                background-color: #444;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Include the navigation menu -->
+        <nav>
+            <div style="display: flex; align-items: center;">
+                <img src="https://th.bing.com/th/id/OIP.Sc3O8n6bPeo51ns8GRaiLwHaHa?rs=1&pid=ImgDetMain" alt="Parrot Logo" style="width: 40px; height: 40px; margin-right: 10px; border-radius: 50%;">
+                <a href="admin.html" style="font-size: 20px; font-weight: bold; color: white; text-decoration: none;">Admin Dashboard</a>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <a href="users.html">Users</a>
+                <button id="themeToggleButton" style="margin-right: 15px; background: none; border: none; cursor: pointer;">
+                    <img id="themeIcon" src="https://img.icons8.com/ios-filled/50/ffffff/sun.png" alt="Theme Icon" style="width: 24px; height: 24px;">
+                </button>
+                <button id="logoutButton">Logout</button>
+            </div>
+        </nav>
+
+        <script type="module">
+            // Logout functionality
+            document.getElementById('logoutButton').addEventListener('click', () => {
+                localStorage.removeItem('loggedInUser'); // Clear user session
+                alert("You have been logged out.");
+                window.location.href = "index.html"; // Redirect to login page
+            });
+
+            // Theme toggle functionality
+            const themeToggleButton = document.getElementById('themeToggleButton');
+            const themeIcon = document.getElementById('themeIcon');
+            const currentTheme = localStorage.getItem('theme') || 'light';
+
+            // Apply the saved theme on page load
+            document.body.className = currentTheme;
+            themeIcon.src = currentTheme === 'light'
+                ? 'https://img.icons8.com/ios-filled/50/ffffff/sun.png' // Sun icon for light theme
+                : 'https://img.icons8.com/ios-filled/50/ffffff/moon-symbol.png'; // Moon icon for dark theme
+
+            themeToggleButton.addEventListener('click', () => {
+                const newTheme = document.body.className === 'light' ? 'dark' : 'light';
+                document.body.className = newTheme;
+                localStorage.setItem('theme', newTheme);
+                themeIcon.src = newTheme === 'light'
+                    ? 'https://img.icons8.com/ios-filled/50/ffffff/sun.png' // Sun icon for light theme
+                    : 'https://img.icons8.com/ios-filled/50/ffffff/moon-symbol.png'; // Moon icon for dark theme
+            });
+        </script>
+
+        <!-- Main Content -->
+        <div class="container">
+            <h1>About HumanLine</h1>
+            <p>HumanLine is a platform designed to provide real-time chat services with options for AI-powered responses and premium human support.</p>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            &copy; 2025 HumanLine. All rights reserved.
+        </footer>
+    </body>
+</html>

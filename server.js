@@ -3,6 +3,8 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import axios from "axios";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 dotenv.config();
 
 const app = express();
@@ -69,6 +71,55 @@ app.post("/mpesa/stk", async (req, res) => {
     console.error(error.response?.data || error.message);
     res.status(500).json({ success: false, message: "STK Push failed" });
   }
+});
+
+// Path to the users.json file
+const usersFilePath = path.join(__dirname, 'users.json');
+
+// Get all users
+app.get('/users', (req, res) => {
+    fs.readFile(usersFilePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read users file' });
+        }
+        const users = JSON.parse(data);
+        res.json(users);
+    });
+});
+
+// Add a new user
+app.post('/users', (req, res) => {
+    const newUser = req.body;
+
+    // Validate the new user
+    if (!newUser.username || !newUser.password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    // Read the existing users
+    fs.readFile(usersFilePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read users file' });
+        }
+
+        const users = JSON.parse(data);
+
+        // Check if the username already exists
+        if (users.some(user => user.username === newUser.username)) {
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+
+        // Add the new user
+        users.push(newUser);
+
+        // Save the updated users list
+        fs.writeFile(usersFilePath, JSON.stringify(users, null, 4), (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to save user' });
+            }
+            res.status(201).json({ message: 'User added successfully' });
+        });
+    });
 });
 
 app.listen(PORT, () => {
