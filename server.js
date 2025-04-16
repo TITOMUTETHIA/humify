@@ -74,9 +74,9 @@ app.post("/mpesa/stk", async (req, res) => {
 });
 
 // Path to the users.json file
-const usersFilePath = path.join(__dirname, 'users.json');
+const usersFilePath = '/home/bigfish/Documents/humanline/users.json';
 
-// Get all users
+// Get all users (Admin only)
 app.get('/users', (req, res) => {
     fs.readFile(usersFilePath, 'utf8', (err, data) => {
         if (err) {
@@ -87,14 +87,49 @@ app.get('/users', (req, res) => {
     });
 });
 
-// Add a new user
+// Add a new user (Admin only)
 app.post('/users', (req, res) => {
+    const newUser = req.body;
+
+    if (!newUser.username || !newUser.password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    newUser.role = 'user';
+
+    fs.readFile(usersFilePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read users file' });
+        }
+
+        const users = JSON.parse(data);
+
+        if (users.some(user => user.username === newUser.username)) {
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+
+        users.push(newUser);
+
+        fs.writeFile(usersFilePath, JSON.stringify(users, null, 4), (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to save user' });
+            }
+            res.status(201).json({ message: 'User added successfully' });
+        });
+    });
+});
+
+// Signup endpoint
+app.post('/signup', (req, res) => {
     const newUser = req.body;
 
     // Validate the new user
     if (!newUser.username || !newUser.password) {
         return res.status(400).json({ error: 'Username and password are required' });
     }
+
+    // Enforce "user" role for all new users
+    newUser.role = "user";
 
     // Read the existing users
     fs.readFile(usersFilePath, 'utf8', (err, data) => {
@@ -117,8 +152,67 @@ app.post('/users', (req, res) => {
             if (err) {
                 return res.status(500).json({ error: 'Failed to save user' });
             }
-            res.status(201).json({ message: 'User added successfully' });
+            res.status(201).json({ message: 'Signup successful' });
         });
+    });
+});
+
+// Login endpoint
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // Validate the login request
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    // Read the existing users
+    fs.readFile(usersFilePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read users file' });
+        }
+
+        const users = JSON.parse(data);
+
+        // Check if the user exists and the password matches
+        const user = users.find(u => u.username === username && u.password === password);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+
+        // Add a default role if not present in the user object
+        if (!user.role) {
+            user.role = username === 'admin' ? 'admin' : 'user';
+        }
+
+        // Login successful
+        res.status(200).json({ message: 'Login successful', user });
+    });
+});
+
+// Forgot Password endpoint
+app.post('/forgot-password', (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+
+    fs.readFile(usersFilePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read users file' });
+        }
+
+        const users = JSON.parse(data);
+        const user = users.find(u => u.username === username);
+
+        if (!user) {
+            return res.status(200).json({ message: 'If the username exists, a reset link has been sent.' });
+        }
+
+        // Simulate sending a reset link (you can integrate email functionality here)
+        console.log(`Password reset link sent to ${username}`);
+        res.status(200).json({ message: 'If the username exists, a reset link has been sent.' });
     });
 });
 
