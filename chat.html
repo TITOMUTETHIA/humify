@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Chat - HumanLine</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="styles.css">
         <style>
             .chat-container {
@@ -35,39 +36,34 @@
                 background: #e9ecef;
             }
 
-            .dropdown {
-                position: relative;
-                display: inline-block;
+            .chat-message.sender {
+                background: #007bff;
+                color: white;
+                text-align: right;
             }
 
-            .dropdown-content {
-                display: none;
-                position: absolute;
-                background-color: #f9f9f9;
-                min-width: 160px;
-                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-                z-index: 1;
+            .chat-input {
+                display: flex;
+                gap: 10px;
+            }
+
+            .chat-input input {
+                flex: 1;
+                padding: 10px;
+                border: 1px solid #ddd;
                 border-radius: 4px;
             }
 
-            .dropdown-content a {
-                color: black;
-                padding: 12px 16px;
-                text-decoration: none;
-                display: block;
-            }
-
-            .dropdown-content a:hover {
-                background-color: #f1f1f1;
-            }
-
-            .dropdown:hover .dropdown-content {
-                display: block;
-            }
-
-            .dropdown:hover .dropbtn {
+            .chat-input button {
+                padding: 10px 20px;
                 background-color: #007bff;
                 color: white;
+                border: none;
+                border-radius: 4px;
+            }
+
+            .chat-input button:hover {
+                background-color: #0056b3;
             }
 
             .search-container {
@@ -75,37 +71,87 @@
             }
 
             .search-container input {
-                width: 100%;
+                width: calc(100% - 22px);
                 padding: 10px;
                 border: 1px solid #ddd;
                 border-radius: 4px;
             }
+
+            .search-results {
+                margin-top: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background: #f9f9f9;
+                max-height: 150px;
+                overflow-y: auto;
+            }
+
+            .search-results div {
+                padding: 10px;
+                cursor: pointer;
+            }
+
+            .search-results div:hover {
+                background: #e9ecef;
+            }
+
+            .user-list {
+                max-width: 400px;
+                margin: 20px auto;
+                padding: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .user-list h2 {
+                font-size: 20px;
+                margin-bottom: 10px;
+                color: #007bff;
+            }
+
+            .user-list ul {
+                list-style: none;
+                padding: 0;
+            }
+
+            .user-list li {
+                padding: 10px;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .user-list li:last-child {
+                border-bottom: none;
+            }
         </style>
     </head>
     <body>
-        <!-- Dropdown Menu -->
-        <div class="dropdown">
-            <button class="dropbtn">Menu</button>
-            <div class="dropdown-content" id="menuLinks">
-                <!-- Links will be dynamically added here -->
-            </div>
-        </div>
-
         <div class="chat-container">
             <div class="chat-header">
                 <h1>Welcome to the Chat</h1>
                 <p>Logged in as: <strong id="currentUser"></strong></p>
             </div>
+
+            <!-- Search Bar -->
             <div class="search-container">
                 <input type="text" id="searchInput" placeholder="Search for a user..." oninput="searchUsers()">
-                <ul id="searchResults"></ul>
+                <div class="search-results" id="searchResults"></div>
             </div>
+
+            <!-- Chat Messages -->
             <div class="chat-messages" id="chatMessages"></div>
+
+            <!-- Chat Input -->
             <div class="chat-input">
                 <input type="text" id="recipient" placeholder="Recipient's Username" required>
                 <input type="text" id="messageInput" placeholder="Type a message..." required>
                 <button id="sendButton">Send</button>
             </div>
+        </div>
+
+        <div class="user-list">
+            <h2>Active Users</h2>
+            <ul id="userList"></ul>
         </div>
 
         <script>
@@ -117,39 +163,19 @@
 
             document.getElementById('currentUser').textContent = currentUser.username;
 
-            // Dynamically populate the dropdown menu
-            const menuLinks = document.getElementById('menuLinks');
-            const pages = [
-                { name: 'Home', url: 'home.html' },
-                { name: 'About', url: 'about.html' },
-                { name: 'Contact', url: 'contact.html' },
-            ];
-
-            pages.forEach(page => {
-                const link = document.createElement('a');
-                link.href = page.url;
-                link.textContent = page.name;
-                menuLinks.appendChild(link);
-            });
-
-            // Only add the admin page if the user is an admin
-            if (currentUser.role === 'admin') {
-                const adminLink = document.createElement('a');
-                adminLink.href = 'admin.html';
-                adminLink.textContent = 'Admin';
-                menuLinks.appendChild(adminLink);
-            }
-
-            // Chat functionality (similar to the previous implementation)
             const chatMessages = document.getElementById('chatMessages');
             const recipientInput = document.getElementById('recipient');
             const messageInput = document.getElementById('messageInput');
             const sendButton = document.getElementById('sendButton');
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            const userList = document.getElementById('userList');
 
+            // Load messages from localStorage
             const loadMessages = () => {
                 const messages = JSON.parse(localStorage.getItem('messages')) || [];
                 chatMessages.innerHTML = '';
-                messages.forEach(message => {
+                messages.forEach((message) => {
                     if (message.sender === currentUser.username || message.recipient === currentUser.username) {
                         const messageDiv = document.createElement('div');
                         messageDiv.className = `chat-message ${message.sender === currentUser.username ? 'sender' : ''}`;
@@ -157,13 +183,15 @@
                         chatMessages.appendChild(messageDiv);
                     }
                 });
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to the bottom
             };
 
-            const saveMessages = messages => {
+            // Save messages to localStorage
+            const saveMessages = (messages) => {
                 localStorage.setItem('messages', JSON.stringify(messages));
             };
 
+            // Send a message
             const sendMessage = () => {
                 const recipient = recipientInput.value.trim();
                 const text = messageInput.value.trim();
@@ -179,7 +207,7 @@
                 }
 
                 const users = JSON.parse(localStorage.getItem('users')) || [];
-                const recipientExists = users.some(user => user.username === recipient);
+                const recipientExists = users.some((user) => user.username === recipient);
 
                 if (!recipientExists) {
                     alert('Recipient does not exist.');
@@ -193,30 +221,54 @@
                 loadMessages();
             };
 
+            // Search for users
+            const searchUsers = async () => {
+                const query = searchInput.value.trim().toLowerCase();
+                if (!query) {
+                    searchResults.innerHTML = '';
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/users');
+                    const users = await response.json();
+                    searchResults.innerHTML = '';
+
+                    users
+                        .filter(user => user.username.toLowerCase().includes(query) && user.username !== 'admin')
+                        .forEach(user => {
+                            const resultDiv = document.createElement('div');
+                            resultDiv.textContent = user.username;
+                            resultDiv.onclick = () => {
+                                recipientInput.value = user.username;
+                                searchResults.innerHTML = '';
+                            };
+                            searchResults.appendChild(resultDiv);
+                        });
+                } catch (err) {
+                    console.error('Failed to search users:', err);
+                }
+            };
+
+            // Load active users
+            const loadActiveUsers = () => {
+                const users = JSON.parse(localStorage.getItem('userList')) || [];
+                userList.innerHTML = '';
+                users.forEach(user => {
+                    const li = document.createElement('li');
+                    li.textContent = user.username;
+                    userList.appendChild(li);
+                });
+            };
+
             sendButton.addEventListener('click', sendMessage);
-            messageInput.addEventListener('keypress', e => {
+            messageInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendMessage();
             });
 
+            // Load messages and active users on page load
             loadMessages();
-
-            // Search functionality
-            const searchInput = document.getElementById('searchInput');
-            const searchResults = document.getElementById('searchResults');
-
-            const searchUsers = () => {
-                const query = searchInput.value.toLowerCase();
-                const users = JSON.parse(localStorage.getItem('users')) || [];
-                searchResults.innerHTML = '';
-
-                users.forEach(user => {
-                    if (user.username.toLowerCase().includes(query)) {
-                        const resultItem = document.createElement('li');
-                        resultItem.textContent = user.username;
-                        searchResults.appendChild(resultItem);
-                    }
-                });
-            };
+            loadActiveUsers();
         </script>
     </body>
 </html>
