@@ -1,127 +1,173 @@
-import express from "express";
-import cors from "cors";
-import bodyParser from "body-parser";
-import axios from "axios";
-import dotenv from "dotenv";
-import fs from "fs";
-import path from "path";
-dotenv.config();
-
+const express = require('express');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const app = express();
-app.use(cors());
-app.use(bodyParser.json());
+const port = 3000;
 
-const PORT = process.env.PORT || 5000;
+app.use(express.json());
 
-const shortCode = process.env.MPESA_SHORTCODE;
-const passkey = process.env.MPESA_PASSKEY;
-const consumerKey = process.env.MPESA_CONSUMER_KEY;
-const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-const callbackURL = process.env.MPESA_CALLBACK_URL;
+// Secret key for JWT (use environment variable in production)
+const JWT_SECRET = process.env.JWT_SECRET || 'humanline-secret-key-change-in-production';
 
-// Generate Access Token
-const getToken = async () => {
-  const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
-  const { data } = await axios.get(
-    "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
-    { headers: { Authorization: `Basic ${auth}` } }
-  );
-  return data.access_token;
+// Centralized user database with IDs and hashed passwords
+// In a real application, you'd retrieve users from a database
+const users = [
+    { id: 1, username: 'admin', password: '$2b$10$rPIuuVXXZVfYgm2Tg7iyJOQVVL1EpYcnQD9PZsHJz0cF7K3yKuUuy', role: 'admin' }, // admin123
+    { id: 2, username: 'Peter', password: '$2b$10$IYu/WapDBnihBzxjNI7SJ.r3LRvfa3oIQym1juXCBUPA8G7w8qSMm', role: 'user' }, // password1
+    { id: 3, username: 'Ann', password: '$2b$10$f.Yrt3gOZCk2Bp32DW.TEuJfPPP0mHfB0XLUobSAUaJcAEgDHLaHW', role: 'user' }, // password2
+    // Other users would have hashed passwords too - abbreviated for clarity
+];
+
+// Authentication middleware - verifies JWT token
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN format
+    
+    if (!token) {
+        return res.status(401).json({ error: 'Access denied. Authentication required.' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+        req.user = user; // Attach decoded user to request
+        next();
+    });
 };
 
-// STK Push
-app.post("/mpesa/stk", async (req, res) => {
-  try {
-    const { phone, amount } = req.body;
-    const token = await getToken();
-
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[-:TZ.]/g, "")
-      .slice(0, 14);
-
-    const password = Buffer.from(`${shortCode}${passkey}${timestamp}`).toString("base64");
-
-    const stkPayload = {
-      BusinessShortCode: shortCode,
-      Password: password,
-      Timestamp: timestamp,
-      TransactionType: "CustomerPayBillOnline",
-      Amount: amount,
-      PartyA: phone,
-      PartyB: shortCode,
-      PhoneNumber: phone,
-      CallBackURL: callbackURL,
-      AccountReference: "HumanLine",
-      TransactionDesc: "Chat Access Payment"
+// Role-based authorization middleware
+const authorizeRole = (roles = []) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Insufficient permissions' });
+        }
+        
+        next();
     };
+};
 
-    const { data } = await axios.post(
-      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
-      stkPayload,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if (data.ResponseCode === "0") {
-      return res.json({ success: true, message: "STK Push sent" });
-    } else {
-      return res.json({ success: false, message: data.ResponseDescription });
-    }
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ success: false, message: "STK Push failed" });
-  }
-});
-
-// Path to the users.json file
-const usersFilePath = path.join(__dirname, 'users.json');
-
-// Get all users
-app.get('/users', (req, res) => {
-    fs.readFile(usersFilePath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(500).json({ error: 'Failed to read users file' });
+// Registration endpoint - uncomment and customize if needed
+/*
+app.post('/register', async (req, res) => {
+    try {
+        const { username, password, role = 'user' } = req.body;
+        
+        // Input validation
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
         }
-        const users = JSON.parse(data);
-        res.json(users);
-    });
-});
-
-// Add a new user
-app.post('/users', (req, res) => {
-    const newUser = req.body;
-
-    // Validate the new user
-    if (!newUser.username || !newUser.password) {
-        return res.status(400).json({ error: 'Username and password are required' });
-    }
-
-    // Read the existing users
-    fs.readFile(usersFilePath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(500).json({ error: 'Failed to read users file' });
+        
+        // Check if user already exists
+        if (users.some(u => u.username === username)) {
+            return res.status(409).json({ error: 'Username already exists' });
         }
-
-        const users = JSON.parse(data);
-
-        // Check if the username already exists
-        if (users.some(user => user.username === newUser.username)) {
-            return res.status(400).json({ error: 'Username already exists' });
-        }
-
-        // Add the new user
+        
+        // Hash password and create new user
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        
+        const newUser = {
+            id: users.length + 1,
+            username,
+            password: hashedPassword,
+            role
+        };
+        
         users.push(newUser);
+        
+        res.status(201).json({ message: 'User registered successfully' });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ error: 'Server error during registration' });
+    }
+});
+*/
 
-        // Save the updated users list
-        fs.writeFile(usersFilePath, JSON.stringify(users, null, 4), (err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to save user' });
-            }
-            res.status(201).json({ message: 'User added successfully' });
+// Login endpoint
+app.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        // Input validation
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+
+        // Find user by username
+        const user = users.find(u => u.username === username);
+        
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+        
+        // Verify password
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+        
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user.id, username: user.username, role: user.role },
+            JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        
+        // Return user info without password
+        const { password: _, ...userInfo } = user;
+        res.json({
+            message: 'Login successful',
+            user: userInfo,
+            token
         });
-    });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Server error during login' });
+    }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+// Protected endpoint to fetch all non-admin users
+app.get('/users', authenticateToken, authorizeRole(['admin']), (req, res) => {
+    try {
+        // Return users without passwords
+        const nonAdminUsers = users
+            .filter(u => u.role !== 'admin')
+            .map(({ password, ...userWithoutPassword }) => userWithoutPassword);
+            
+        res.json(nonAdminUsers);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Server error while fetching users' });
+    }
+});
+
+// Get current user profile
+app.get('/profile', authenticateToken, (req, res) => {
+    try {
+        const user = users.find(u => u.id === req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Return user without password
+        const { password, ...userInfo } = user;
+        res.json(userInfo);
+    } catch (error) {
+        console.error('Profile error:', error);
+        res.status(500).json({ error: 'Server error while fetching profile' });
+    }
+});
+
+// Serve static files
+app.use(express.static('public'));
+
+// Start the server
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
 });

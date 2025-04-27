@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Chat - HumanLine</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="styles.css">
         <style>
             .chat-container {
@@ -59,37 +60,88 @@
                 color: white;
                 border: none;
                 border-radius: 4px;
-                cursor: pointer;
             }
 
             .chat-input button:hover {
                 background-color: #0056b3;
             }
+
+            .search-container {
+                margin-bottom: 20px;
+            }
+
+            .search-container input {
+                width: calc(100% - 22px);
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+
+            .search-results {
+                margin-top: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background: #f9f9f9;
+                max-height: 150px;
+                overflow-y: auto;
+            }
+
+            .search-results div {
+                padding: 10px;
+                cursor: pointer;
+            }
+
+            .search-results div:hover {
+                background: #e9ecef;
+            }
+
+            .user-list {
+                max-width: 400px;
+                margin: 20px auto;
+                padding: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .user-list h2 {
+                font-size: 20px;
+                margin-bottom: 10px;
+                color: #007bff;
+            }
+
+            .user-list ul {
+                list-style: none;
+                padding: 0;
+            }
+
+            .user-list li {
+                padding: 10px;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .user-list li:last-child {
+                border-bottom: none;
+            }
         </style>
     </head>
     <body>
-        <!-- Include the navigation menu -->
-        <div id="menu"></div>
-        <script>
-            fetch('menu.html')
-                .then(response => response.text())
-                .then(html => document.getElementById('menu').innerHTML = html);
-
-            // Restrict access to logged-in users only
-            const user = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (!user) {
-                alert("Please log in to access this page.");
-                window.location.href = "index.html";
-            }
-        </script>
-
-        <!-- Main Content -->
         <div class="chat-container">
             <div class="chat-header">
                 <h1>Welcome to the Chat</h1>
                 <p>Logged in as: <strong id="currentUser"></strong></p>
             </div>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search for a user..." oninput="searchUsers()">
+                <div class="search-results" id="searchResults"></div>
+            </div>
+
+            <!-- Chat Messages -->
             <div class="chat-messages" id="chatMessages"></div>
+
+            <!-- Chat Input -->
             <div class="chat-input">
                 <input type="text" id="recipient" placeholder="Recipient's Username" required>
                 <input type="text" id="messageInput" placeholder="Type a message..." required>
@@ -97,14 +149,27 @@
             </div>
         </div>
 
+        <div class="user-list">
+            <h2>Active Users</h2>
+            <ul id="userList"></ul>
+        </div>
+
         <script>
             const currentUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (!currentUser) {
+                alert('Please log in to access this page.');
+                window.location.href = 'index.html';
+            }
+
             document.getElementById('currentUser').textContent = currentUser.username;
 
             const chatMessages = document.getElementById('chatMessages');
             const recipientInput = document.getElementById('recipient');
             const messageInput = document.getElementById('messageInput');
             const sendButton = document.getElementById('sendButton');
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            const userList = document.getElementById('userList');
 
             // Load messages from localStorage
             const loadMessages = () => {
@@ -118,6 +183,7 @@
                         chatMessages.appendChild(messageDiv);
                     }
                 });
+                chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to the bottom
             };
 
             // Save messages to localStorage
@@ -155,14 +221,54 @@
                 loadMessages();
             };
 
-            // Event listeners
+            // Search for users
+            const searchUsers = async () => {
+                const query = searchInput.value.trim().toLowerCase();
+                if (!query) {
+                    searchResults.innerHTML = '';
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/users');
+                    const users = await response.json();
+                    searchResults.innerHTML = '';
+
+                    users
+                        .filter(user => user.username.toLowerCase().includes(query) && user.username !== 'admin')
+                        .forEach(user => {
+                            const resultDiv = document.createElement('div');
+                            resultDiv.textContent = user.username;
+                            resultDiv.onclick = () => {
+                                recipientInput.value = user.username;
+                                searchResults.innerHTML = '';
+                            };
+                            searchResults.appendChild(resultDiv);
+                        });
+                } catch (err) {
+                    console.error('Failed to search users:', err);
+                }
+            };
+
+            // Load active users
+            const loadActiveUsers = () => {
+                const users = JSON.parse(localStorage.getItem('userList')) || [];
+                userList.innerHTML = '';
+                users.forEach(user => {
+                    const li = document.createElement('li');
+                    li.textContent = user.username;
+                    userList.appendChild(li);
+                });
+            };
+
             sendButton.addEventListener('click', sendMessage);
             messageInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendMessage();
             });
 
-            // Load messages on page load
+            // Load messages and active users on page load
             loadMessages();
+            loadActiveUsers();
         </script>
     </body>
 </html>

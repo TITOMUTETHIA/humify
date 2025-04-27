@@ -162,5 +162,22 @@
             // Load users on page load
             loadUsers();
         </script>
+
+        <script>
+            const express = require('express');
+            const fs = require('fs');
+            const app = express();
+            const usersFilePath = './users.json';
+
+            app.get('/users', (req, res) => {
+                fs.readFile(usersFilePath, 'utf8', (err, data) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Failed to read users file' });
+                    }
+                    const users = JSON.parse(data);
+                    res.json(users);
+                });
+            });
+        </script>
     </body>
 </html>

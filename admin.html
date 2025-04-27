@@ -19,10 +19,6 @@
                 margin-bottom: 20px;
             }
 
-            .user-list {
-                margin-bottom: 20px;
-            }
-
             .user-list table {
                 width: 100%;
                 border-collapse: collapse;
@@ -38,9 +34,21 @@
                 background-color: #f4f4f4;
             }
 
-            .user-actions button {
-                margin-right: 5px;
-                padding: 5px 10px;
+            .add-user-form {
+                margin-top: 20px;
+            }
+
+            .add-user-form input {
+                margin: 5px 0;
+                padding: 10px;
+                width: calc(100% - 22px);
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+
+            .add-user-form button {
+                margin-top: 10px;
+                padding: 10px 20px;
                 background-color: #007bff;
                 color: white;
                 border: none;
@@ -48,47 +56,21 @@
                 cursor: pointer;
             }
 
-            .user-actions button:hover {
+            .add-user-form button:hover {
                 background-color: #0056b3;
             }
         </style>
     </head>
     <body>
-        <!-- Include the navigation menu -->
-        <div id="menu"></div>
-        <script>
-            // Include the navigation menu
-            fetch('menu.html')
-                .then(response => response.text())
-                .then(html => document.getElementById('menu').innerHTML = html)
-                .then(() => {
-                    // Add logout functionality
-                    document.getElementById('logoutButton').addEventListener('click', () => {
-                        localStorage.removeItem('loggedInUser'); // Clear user session
-                        alert("You have been logged out.");
-                        window.location.href = "index.html"; // Redirect to login page
-                    });
-                });
-
-            // Restrict access to admin users only
-            const user = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (!user || user.role !== "admin") {
-                alert("Access denied! Admins only.");
-                window.location.href = "index.html";
-            }
-        </script>
-
-        <!-- Main Content -->
         <div class="admin-container">
             <h1>Admin Dashboard</h1>
             <div class="user-list">
-                <h2>Manage Users</h2>
+                <h2>Registered Users</h2>
                 <table>
                     <thead>
                         <tr>
                             <th>Username</th>
                             <th>Role</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="userTable">
@@ -96,63 +78,71 @@
                     </tbody>
                 </table>
             </div>
-            <div>
+            <div class="add-user-form">
                 <h2>Add New User</h2>
                 <form id="addUserForm">
                     <input type="text" id="newUsername" placeholder="Username" required>
                     <input type="password" id="newPassword" placeholder="Password" required>
-                    <select id="newRole">
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                    </select>
                     <button type="submit">Add User</button>
                 </form>
             </div>
         </div>
 
         <script>
-            // Load users from the backend
+            // Check if the logged-in user is an admin
+            const currentUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (!currentUser || currentUser.role !== 'admin') {
+                alert('Access denied! Admins only.');
+                window.location.href = 'index.html';
+            }
+
+            // Fetch and display all users
             const loadUsers = async () => {
-                const response = await fetch('/users');
-                const users = await response.json();
-                const userTable = document.getElementById('userTable');
-                userTable.innerHTML = '';
-                users.forEach((user, index) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${user.username}</td>
-                        <td>${user.role || 'user'}</td>
-                        <td class="user-actions">
-                            <button onclick="editUser(${index})">Edit</button>
-                            <button onclick="deleteUser(${index})" style="background-color: red;">Delete</button>
-                        </td>
-                    `;
-                    userTable.appendChild(row);
-                });
+                try {
+                    const response = await fetch('/users');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch users');
+                    }
+                    const users = await response.json();
+                    const userTable = document.getElementById('userTable');
+                    userTable.innerHTML = '';
+                    users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.username}</td>
+                            <td>${user.role}</td>
+                        `;
+                        userTable.appendChild(row);
+                    });
+                } catch (err) {
+                    console.error('Failed to load users:', err);
+                }
             };
 
             // Add a new user
             document.getElementById('addUserForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+
                 const username = document.getElementById('newUsername').value;
                 const password = document.getElementById('newPassword').value;
-                const role = document.getElementById('newRole').value;
 
-                const newUser = { username, password, role };
+                try {
+                    const response = await fetch('/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password }),
+                    });
 
-                const response = await fetch('/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newUser),
-                });
-
-                if (response.ok) {
-                    alert('User added successfully!');
-                    loadUsers();
-                    e.target.reset();
-                } else {
-                    const error = await response.json();
-                    alert(error.error);
+                    if (response.ok) {
+                        alert('User added successfully!');
+                        loadUsers(); // Reload the user list
+                        e.target.reset();
+                    } else {
+                        const error = await response.json();
+                        alert(error.error);
+                    }
+                } catch (err) {
+                    alert('An error occurred. Please try again later.');
                 }
             });
 
