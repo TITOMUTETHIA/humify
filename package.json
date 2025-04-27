@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "axios": "^1.8.4",
+    "bcrypt": "^5.1.1",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "fs": "^0.0.1-security"
+    "fs": "^0.0.1-security",
+    "jsonwebtoken": "^9.0.2"
   },
   "description": "[![React](https://img.shields.io/badge/React-18.2.0-blue)](https://react.dev/)\r [![Firebase](https://img.shields.io/badge/Firebase-9.22.0-orange)](https://firebase.google.com/)\r [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--3.5-green)](https://openai.com/)",
   "main": "index.js",
